@@ -1,8 +1,8 @@
 import unittest
-import parallel_test
+import paranoses
 import time, os
 
-class Test2(parallel_test.ParallelTest):
+class Test2(paranoses.ParallelTest):
     _multiprocess_shared_ = True
 #    _multiprocess_can_split_ = True
 
