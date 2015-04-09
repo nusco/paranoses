@@ -2,9 +2,11 @@ import unittest
 import multiprocessing
 import os
 import keymaster
+import keymaster_commands
 
-_keymaster_process_lock = multiprocessing.Lock()
 _keymaster = None
+_keymaster_locking_queue = multiprocessing.Queue()
+_keymaster_process_lock = multiprocessing.Lock()
 
 class ParallelTest(unittest.TestCase):
     @classmethod
@@ -13,18 +15,24 @@ class ParallelTest(unittest.TestCase):
             global _keymaster
             if _keymaster == None:
                 print "Starting keymaster from main process (" + str(os.getpid()) + ")"
-                _keymaster = keymaster.Keymaster()
+                _keymaster = keymaster.Keymaster(_keymaster_locking_queue)
                 _keymaster.daemon = True
                 _keymaster.start()
 
     @classmethod
     def teardown_class(cls):
-      pass # let the daemon terminate on its own. do we need anything else here? think about it
+        pass # TODO: the daemon terminates on its own, but do we need to do anything else here?
 
     def setUp(self):
-      self._keymaster_queue = multiprocessing.Queue()
-      pass
+        context = "X" # temporary catch-all value
+        command = keymaster_commands.LockCommand(context)
+        _keymaster_locking_queue.put(command)
+        print "Process " + str(os.getpid()) + " send a locking command. Waiting on event..."
+        # TODO: wait until we have permission to run
+        print "...event triggered. Process " + str(os.getpid()) + " owns context " + context + "."
 
     def tearDown(self):
-      pass
-
+        context = "X" # temporary catch-all value
+        command = keymaster_commands.ReleaseCommand(context)
+        _keymaster_locking_queue.put(command)
+        print "Process " + str(os.getpid()) + " sent a release command."

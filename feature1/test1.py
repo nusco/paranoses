@@ -8,9 +8,11 @@ class Test1(paranoses.ParallelTest):
 
     def setUp(self):
         print "setup Test1 in " + str(os.getpid())
+        paranoses.ParallelTest.setUp(self)
 
     def tearDown(self):
         print "teardown Test1 in " + str(os.getpid())
+        paranoses.ParallelTest.tearDown(self)
 
     def test_a(self):
         for i in range(5):
