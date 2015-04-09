@@ -1,8 +1,9 @@
 import unittest
+import multiprocessing
 import os
-from multiprocessing import Lock
+import keymaster
 
-_keymaster_process_lock = Lock()
+_keymaster_process_lock = multiprocessing.Lock()
 _keymaster = None
 
 class ParallelTest(unittest.TestCase):
@@ -11,15 +12,19 @@ class ParallelTest(unittest.TestCase):
         with _keymaster_process_lock:
             global _keymaster
             if _keymaster == None:
-                _keymaster = "something (later it will be the process itself)"
-                print "GLOBAL SETUP in " + str(os.getpid())
-                # TODO: make it a daemon process? send it a poison pill at the end?
+                print "Starting keymaster from main process (" + str(os.getpid()) + ")"
+                _keymaster = keymaster.Keymaster()
+                _keymaster.daemon = True
+                _keymaster.start()
 
     @classmethod
     def teardown_class(cls):
-        global _keymaster
-        with _keymaster_process_lock:
-            if _keymaster != None:
-                _keymaster = None
-                print "GLOBAL TEARDOWN in " + str(os.getpid())
+      pass # let the daemon terminate on its own. do we need anything else here? think about it
+
+    def setUp(self):
+      self._keymaster_queue = multiprocessing.Queue()
+      pass
+
+    def tearDown(self):
+      pass
 
