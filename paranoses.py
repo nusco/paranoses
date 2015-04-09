@@ -19,24 +19,23 @@ class ParallelTest(unittest.TestCase):
             global _queue_from_keymaster
             if _keymaster == None:
                 print "Starting keymaster in main process (" + str(os.getpid()) + ")"
+                
                 _queue_to_keymaster = multiprocessing.Queue()
                 _queue_from_keymaster = multiprocessing.Queue()
                 _keymaster = keymaster.Keymaster(_queue_to_keymaster, _queue_from_keymaster)
                 _keymaster.daemon = True
                 _keymaster.start()
-        
-    @classmethod
-    def teardown_class(cls):
-        pass # TODO: the daemon terminates on its own, but do we need to do anything else here?
 
     def setUp(self):
         self.test_id = str(random.randint(0, 1000000000)) # TODO: temporary. use a serial that is different for each test instead
         print "Test " + self.test_id + " in process " + str(os.getpid()) + " asks to own a context"
-        _queue_to_keymaster.put("GET")
 
+        _queue_to_keymaster.put("GET")
         self.context = _queue_from_keymaster.get()
+
         print "Test " + self.test_id + " in process " + str(os.getpid()) + " acquired context " + self.context + " and can proceed."
         
     def tearDown(self):
         _queue_to_keymaster.put(self.context)
+
         print "Test " + self.test_id + " in process " + str(os.getpid()) +  " released context " + self.context + "."

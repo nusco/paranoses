@@ -13,6 +13,7 @@ class Keymaster(multiprocessing.Process):
 
   def run(self):
     print "Keymaster process started with id " + str(os.getpid())
+
     while True:
         request = self.queue_in.get()
         with self.access_lock:
@@ -24,12 +25,14 @@ class Keymaster(multiprocessing.Process):
   def _return_context(self):
       for context, locked in self.locked_contexts.items():
           if not locked:
+              print "Keymaster got a locking request. Returning context: " + context
+
               self.locked_contexts[context] = True
               self.queue_out.put(context)
-              print "Keymaster got a locking request. Returning context: " + context
               return
       raise Exception("No available context left. Go easy on those parallel processes.")
 
   def _release_context(self, context):
       print "Keymaster got a release request. Releasing context: " + context
+
       self.locked_contexts[context] = False
