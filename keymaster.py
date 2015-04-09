@@ -4,20 +4,32 @@ import os
 import time
 
 class Keymaster(multiprocessing.Process):
-  def __init__(self, contexts_to_owners, bookings):
+  def __init__(self, queue_in, queue_out):
     multiprocessing.Process.__init__(self, name="keymaster")
-    self.contexts_to_owners = contexts_to_owners
-    self.bookings = bookings
+    self.queue_in = queue_in
+    self.queue_out = queue_out
+    self.locked_contexts = {"X" : False, "Y" : False, "Z" : False, "W" : False, "XX" : False, "YY" : False, "ZZ" : False, "WW" : False}
+    self.access_lock = threading.Lock()
 
   def run(self):
     print "Keymaster process started with id " + str(os.getpid())
     while True:
-      for booker, context in self.bookings.items():
-          if self._is_available(context):
-              del self.bookings[booker]
-              self.contexts_to_owners[context] = booker
-              print "Keymaster allowed " + booker + " to own context " + context
-      time.sleep(1)
+        request = self.queue_in.get()
+        with self.access_lock:
+            if (request == "GET"):
+                self._return_context()
+            else:
+                self._release_context(request)
 
-  def _is_available(self, context):
-    return not self.contexts_to_owners.has_key(context)
+  def _return_context(self):
+      for context, locked in self.locked_contexts.items():
+          if not locked:
+              self.locked_contexts[context] = True
+              self.queue_out.put(context)
+              print "Keymaster got a locking request. Returning context: " + context
+              return
+      raise Exception("No available context left. Go easy on those parallel processes.")
+
+  def _release_context(self, context):
+      print "Keymaster got a release request. Releasing context: " + context
+      self.locked_contexts[context] = False
