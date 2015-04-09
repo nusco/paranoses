@@ -1,20 +1,25 @@
 import unittest
 import os
-import keymaster_factory
+from multiprocessing import Lock
+
+_keymaster_process_lock = Lock()
+_keymaster = None
 
 class ParallelTest(unittest.TestCase):
     @classmethod
     def setup_class(cls):
-        with keymaster_factory.lock:
-            if keymaster_factory.keymaster == None:
-                keymaster_factory.keymaster = "something (later it will be the process itself)"
+        with _keymaster_process_lock:
+            global _keymaster
+            if _keymaster == None:
+                _keymaster = "something (later it will be the process itself)"
                 print "GLOBAL SETUP in " + str(os.getpid())
                 # TODO: make it a daemon process? send it a poison pill at the end?
 
     @classmethod
     def teardown_class(cls):
-        with keymaster_factory.lock:
-            if keymaster_factory.keymaster != None:
-                keymaster_factory.keymaster = None
+        global _keymaster
+        with _keymaster_process_lock:
+            if _keymaster != None:
+                _keymaster = None
                 print "GLOBAL TEARDOWN in " + str(os.getpid())
 
