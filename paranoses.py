@@ -11,6 +11,8 @@ _context_dealer = None
 _context_dealer_process_lock = multiprocessing.Lock()
 
 class ParallelTest(unittest.TestCase):
+    _multiprocess_shared_ = True
+    
     @classmethod
     def setup_class(cls):
         with _context_dealer_process_lock:
